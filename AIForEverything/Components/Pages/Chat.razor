@@ -1,93 +1,99 @@
-@page "/"
+@page "/chat"
 @using AIForEverything.Services
 @using Microsoft.JSInterop
 @using Microsoft.SemanticKernel.ChatCompletion
 @using Markdig
+@using AIForEverything.Constants
 @inject IAIChatService ChatService
 @inject ILogger<Chat> Logger
 @inject IJSRuntime JS
+@inject IAuthStateService AuthStateService
+@inject NavigationManager NavigationManager
 @implements IAsyncDisposable
 @rendermode InteractiveServer
 
-<PageTitle>AI Assistant</PageTitle>
-
-<div class="chat-container">
-    <header class="chat-header">
-        <div class="header-content">
-            <h1>AI Assistant</h1>
-            <p class="subtitle">Your intelligent companion</p>
-        </div>
-    </header>
-    
-    <div class="chat-history" @ref="chatHistoryDiv">
-        @foreach (var message in ChatService.GetChatHistory())
-        {
-            <div class="message @(message.Role.ToString().ToLower())">
-                @if (message.Role == AuthorRole.Assistant)
-                {
-                    <div class="avatar">AI</div>
-                }
-                <div class="message-content">
-                    <p>@((MarkupString)ConvertToHtml(message.Content))</p>
-                </div>
-                @if (message.Role == AuthorRole.User)
-                {
-                    <div class="avatar">User</div>
-                }
+<AuthLayout>
+    <div class="chat-container">
+        <header class="chat-header">
+            <div class="header-content">
+                <h1>AI Assistant</h1>
+                <p class="subtitle">@ChatConstants.SystemPrompt</p>
             </div>
-        }
-        @if (isStreaming)
-        {
-            <div class="message assistant">
-                <div class="avatar">AI</div>
-                <div class="message-content">
-                    <p>@((MarkupString)ConvertToHtml(currentStreamingMessage))</p>
-                </div>
-            </div>
-        }
-    </div>
-
-    <div class="chat-input-container">
-        <div class="input-wrapper">
-            <input type="text" 
-                   placeholder="Message AI Assistant..." 
-                   @bind="userInput" 
-                   @onkeyup="HandleKeyPress" />
-            <button type="button" class="send-button" @onclick="SendMessage">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </button>
-            @if (showToast)
+        </header>
+        
+        <div class="chat-history" @ref="chatHistoryDiv">
+            @if (chatHistory != null)
             {
-                <div class="toast @(isError ? "error" : "info") @(showToast ? "show" : "")">
-                    <div class="toast-content">
-                        <span class="toast-icon">
-                            @if (isError)
-                            {
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2"/>
-                                    <path d="M12 8V12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                    <circle cx="12" cy="16" r="1" fill="currentColor"/>
-                                </svg>
-                            }
-                            else
-                            {
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2"/>
-                                    <path d="M12 16V16.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                    <path d="M12 8V12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                </svg>
-                            }
-                        </span>
-                        <span class="toast-message">@toastMessage</span>
+                @foreach (var message in chatHistory)
+                {
+                    <div class="message @(message.Role.ToString().ToLower())">
+                        @if (message.Role == AuthorRole.Assistant)
+                        {
+                            <div class="avatar">AI</div>
+                        }
+                        <div class="message-content">
+                            <p>@((MarkupString)ConvertToHtml(message.Content))</p>
+                        </div>
+                        @if (message.Role == AuthorRole.User)
+                        {
+                            <div class="avatar">User</div>
+                        }
+                    </div>
+                }
+            }
+            @if (isStreaming)
+            {
+                <div class="message assistant">
+                    <div class="avatar">AI</div>
+                    <div class="message-content">
+                        <p>@((MarkupString)ConvertToHtml(currentStreamingMessage))</p>
                     </div>
                 </div>
             }
         </div>
+
+        <div class="chat-input-container">
+            <div class="input-wrapper">
+                <input type="text" 
+                       placeholder="Message AI Assistant..." 
+                       @bind="userInput" 
+                       @onkeyup="HandleKeyPress" />
+                <button type="button" class="send-button" @onclick="SendMessage">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                @if (showToast)
+                {
+                    <div class="toast @(isError ? "error" : "info") @(showToast ? "show" : "")">
+                        <div class="toast-content">
+                            <span class="toast-icon">
+                                @if (isError)
+                                {
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2"/>
+                                        <path d="M12 8V12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                        <circle cx="12" cy="16" r="1" fill="currentColor"/>
+                                    </svg>
+                                }
+                                else
+                                {
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2"/>
+                                        <path d="M12 16V16.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                        <path d="M12 8V12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    </svg>
+                                }
+                            </span>
+                            <span class="toast-message">@toastMessage</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
     </div>
-</div>
+</AuthLayout>
 
 @code {
     private string userInput = "";
@@ -95,7 +101,8 @@
     private bool isStreaming = false;
     private ElementReference chatHistoryDiv;
     private CancellationTokenSource? cts;
-    private bool isJsInteropReady;
+    private int? userId;
+    private ChatHistory? chatHistory;
     
     private bool showToast = false;
     private string toastMessage = "";
@@ -105,6 +112,30 @@
     private static readonly MarkdownPipeline pipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
         .Build();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                userId = await AuthStateService.GetUserIdAsync();
+                if (!userId.HasValue)
+                {
+                    NavigationManager.NavigateTo("/login", true);
+                    return;
+                }
+
+                chatHistory = await ChatService.GetChatHistoryAsync(userId.Value);
+                StateHasChanged();
+                await ScrollToBottom();
+            }
+            catch
+            {
+                // Ignore JavaScript interop errors during prerendering
+            }
+        }
+    }
 
     private string ConvertToHtml(string markdown)
     {
@@ -130,15 +161,6 @@
         }, null, duration, Timeout.Infinite);
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            isJsInteropReady = true;
-            await ScrollToBottom();
-        }
-    }
-
     private async Task HandleKeyPress(KeyboardEventArgs e)
     {
         if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(userInput))
@@ -161,15 +183,17 @@
             return;
         }
 
+        if (!userId.HasValue)
+        {
+            ShowToast("You must be logged in to send messages", true);
+            return;
+        }
+
         var userMessage = userInput;
-        
         userInput = "";
         
         StateHasChanged();
-        if (isJsInteropReady)
-        {
-            await ScrollToBottom();
-        }
+        await ScrollToBottom();
 
         // Start streaming AI response
         isStreaming = true;
@@ -179,15 +203,15 @@
         {
             cts = new CancellationTokenSource();
             
-            await foreach (var chunk in ChatService.GetStreamingChatResponseAsync(userMessage).WithCancellation(cts.Token))
+            await foreach (var chunk in ChatService.GetStreamingChatResponseAsync(userMessage, userId.Value).WithCancellation(cts.Token))
             {
                 currentStreamingMessage += chunk;
                 StateHasChanged();
-                if (isJsInteropReady)
-                {
-                    await ScrollToBottom();
-                }
+                await ScrollToBottom();
             }
+
+            // 更新聊天历史
+            chatHistory = await ChatService.GetChatHistoryAsync(userId.Value);
         }
         catch (Exception ex)
         {
@@ -199,10 +223,7 @@
             isStreaming = false;
             currentStreamingMessage = "";
             StateHasChanged();
-            if (isJsInteropReady)
-            {
-                await ScrollToBottom();
-            }
+            await ScrollToBottom();
         }
     }
 

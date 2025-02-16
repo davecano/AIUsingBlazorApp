@@ -1,0 +1,73 @@
+@page "/login"
+@using AIForEverything.Services
+@inject IAuthService AuthService
+@inject IAuthStateService AuthStateService
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+<PageTitle>Login - AI For Everything</PageTitle>
+
+<div class="login-container">
+    <div class="login-box">
+        <h2>Login</h2>
+        <div class="form-group">
+            <input type="text" class="form-control" placeholder="Username" @bind="username" />
+        </div>
+        <div class="form-group">
+            <input type="password" class="form-control" placeholder="Password" @bind="password" />
+        </div>
+        <button class="btn btn-primary" @onclick="HandleLogin">Login</button>
+        <div class="register-link">
+            Don't have an account? <a href="/register">Register</a>
+        </div>
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger mt-3">
+                @errorMessage
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private string username = "";
+    private string password = "";
+    private string errorMessage = "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                if (await AuthStateService.IsAuthenticatedAsync())
+                {
+                    NavigationManager.NavigateTo("/chat");
+                }
+            }
+            catch
+            {
+                // Ignore JavaScript interop errors during prerendering
+            }
+        }
+    }
+
+    private async Task HandleLogin()
+    {
+        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+        {
+            errorMessage = "Please enter both username and password";
+            return;
+        }
+
+        var result = await AuthService.LoginAsync(username, password);
+        if (result.success)
+        {
+            await AuthStateService.SetAuthenticatedAsync(result.user!.Id);
+            NavigationManager.NavigateTo("/chat");
+        }
+        else
+        {
+            errorMessage = result.message;
+        }
+    }
+} 

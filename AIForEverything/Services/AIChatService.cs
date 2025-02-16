@@ -4,6 +4,7 @@ using Microsoft.SemanticKernel.Connectors.OpenAI;
 using Microsoft.Extensions.Options;
 using System.Runtime.CompilerServices;
 using System.Linq;
+using AIForEverything.Data;
 using AIForEverything.Models;
 
 namespace AIForEverything.Services;
@@ -13,7 +14,10 @@ public class AIChatService : BaseChatService
     private readonly Kernel _kernel;
     private readonly OpenAISettings _settings;
 
-    public AIChatService(ILogger<AIChatService> logger, IOptions<OpenAISettings> settings) : base(logger)
+    public AIChatService(
+        ILogger<AIChatService> logger, 
+        IOptions<OpenAISettings> settings,
+        ApplicationDbContext context) : base(logger, context)
     {
         _settings = settings.Value;
         _kernel = InitializeKernel();
@@ -35,11 +39,13 @@ public class AIChatService : BaseChatService
         return kernelBuilder.Build();
     }
 
-    protected override async IAsyncEnumerable<string> GenerateResponseStreamAsync(string userMessage)
+    protected override async IAsyncEnumerable<string> GenerateResponseStreamAsync(
+        string userMessage, 
+        Microsoft.SemanticKernel.ChatCompletion.ChatHistory chatHistory)
     {
         var chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
         var response = chatCompletionService.GetStreamingChatMessageContentsAsync(
-            _chatHistory,
+            chatHistory,
             executionSettings: new OpenAIPromptExecutionSettings 
             { 
                 Temperature = 0.7f,

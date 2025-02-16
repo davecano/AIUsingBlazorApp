@@ -1,0 +1,60 @@
+@using AIForEverything.Services
+@inject IAuthStateService AuthStateService
+@inject NavigationManager NavigationManager
+
+@if (_initialized)
+{
+    @if (_isAuthenticated)
+    {
+        @ChildContent
+    }
+    else if (!_isLoginPage)
+    {
+        <div class="auth-loading">
+            <div class="spinner"></div>
+            <p>Checking authentication...</p>
+        </div>
+    }
+}
+
+@code {
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    private bool _isAuthenticated;
+    private bool _initialized;
+    private bool _isLoginPage;
+
+    protected override void OnInitialized()
+    {
+        var currentUri = NavigationManager.Uri.ToLower();
+        _isLoginPage = currentUri.Contains("/login") || currentUri.Contains("/register");
+        
+        if (_isLoginPage)
+        {
+            _initialized = true;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_isLoginPage)
+        {
+            try
+            {
+                _isAuthenticated = await AuthStateService.IsAuthenticatedAsync();
+                if (!_isAuthenticated)
+                {
+                    NavigationManager.NavigateTo("/login", true);
+                    return;
+                }
+                _initialized = true;
+                StateHasChanged();
+            }
+            catch
+            {
+                // Ignore JavaScript interop errors during prerendering
+            }
+        }
+    }
+} 

@@ -362,3 +362,6 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /AIForEverything/appsettings.*
+/AIForEverything/app.db
+/AIForEverything/app.db-shm
+/AIForEverything/app.db-wal
