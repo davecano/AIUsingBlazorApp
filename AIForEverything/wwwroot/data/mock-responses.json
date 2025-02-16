@@ -1,0 +1,40 @@
+{
+    "responses": [
+        {
+            "type": "markdown_example",
+            "content": "# Markdown 格式示例\n\n## 文本格式\n**粗体文本** 和 *斜体文本*\n~~删除线文本~~ 和 `内联代码`\n\n## 列表示例\n### 无序列表\n- 第一项\n- 第二项\n  - 子项 1\n  - 子项 2\n\n### 有序列表\n1. 第一步\n2. 第二步\n   1. 子步骤 1\n   2. 子步骤 2\n\n## 代码块示例\n```csharp\npublic class Example\n{\n    public void Test()\n    {\n        Console.WriteLine(\"Hello World!\");\n    }\n}\n```\n\n## 表格示例\n| 标题 1 | 标题 2 |\n|--------|--------|\n| 单元格 1 | 单元格 2 |\n| 单元格 3 | 单元格 4 |\n\n## 引用示例\n> 这是一个引用文本\n> 可以有多行\n\n## 链接和图片\n[链接文本](https://example.com)\n![图片描述](https://example.com/image.jpg)"
+        },
+        {
+            "type": "api_guide",
+            "content": "# API 使用指南\n\n## 安装\n使用以下命令安装包：\n```bash\ndotnet add package ExamplePackage\n```\n\n## 基本用法\n以下是一个简单的示例：\n```csharp\nusing ExamplePackage;\n\nvar client = new Client();\nvar result = await client.GetDataAsync();\n```\n\n### 配置选项\n| 选项 | 类型 | 默认值 | 描述 |\n|------|------|--------|------|\n| Timeout | int | 30 | 超时时间（秒） |\n| RetryCount | int | 3 | 重试次数 |\n\n> 注意：请确保在生产环境中适当配置超时值。\n\n## 高级特性\n1. 自动重试\n2. 负载均衡\n3. 缓存支持\n\n详细文档请参考 [官方文档](https://example.com/docs)"
+        },
+        {
+            "type": "linq_tutorial",
+            "content": "# C# LINQ 教程\n\n## 什么是 LINQ？\nLINQ (Language Integrated Query) 是 .NET 中的一个强大特性。\n\n## 常用操作符\n### 1. Where\n```csharp\nvar numbers = new[] { 1, 2, 3, 4, 5 };\nvar evenNumbers = numbers.Where(n => n % 2 == 0);\n```\n\n### 2. Select\n```csharp\nvar squares = numbers.Select(n => n * n);\n```\n\n## 实际应用示例\n> 💡 提示：以下示例展示了实际开发中的常见用法\n\n```csharp\nvar users = await dbContext.Users\n    .Where(u => u.IsActive)\n    .Select(u => new {\n        u.Name,\n        u.Email\n    })\n    .ToListAsync();\n```\n\n### 性能比较\n| 操作 | 性能 | 内存使用 |\n|------|------|----------|\n| Where | 快 | 低 |\n| Select | 快 | 低 |\n| OrderBy | 中等 | 中等 |"
+        },
+        {
+            "type": "faq",
+            "content": "# 常见问题解答\n\n## 1. 什么是依赖注入？\n依赖注入是一种软件设计模式，它有以下优点：\n- 降低代码耦合度\n- 提高代码可测试性\n- 简化代码维护\n\n### 示例代码\n```csharp\npublic class UserService\n{\n    private readonly IRepository _repository;\n    \n    public UserService(IRepository repository)\n    {\n        _repository = repository;\n    }\n}\n```\n\n## 2. 如何处理异常？\n> 最佳实践：始终使用 try-catch 块处理可能的异常\n\n```csharp\ntry\n{\n    // 可能抛出异常的代码\n}\ncatch (SpecificException ex)\n{\n    // 处理特定异常\n}\nfinally\n{\n    // 清理代码\n}\n```"
+        },
+        {
+            "type": "simple_response",
+            "content": "I'd be happy to help you with that! What specific information are you looking for?"
+        },
+        {
+            "type": "simple_response",
+            "content": "That's an interesting question. Let me explain it in detail..."
+        },
+        {
+            "type": "simple_response",
+            "content": "Based on my understanding, here are a few key points to consider..."
+        },
+        {
+            "type": "simple_response",
+            "content": "I can help you with that. First, let's break down the problem..."
+        },
+        {
+            "type": "simple_response",
+            "content": "Great question! Here's what you need to know..."
+        }
+    ]
+} 
