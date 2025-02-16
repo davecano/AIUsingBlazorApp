@@ -1,0 +1,171 @@
+@page "/"
+@using AIForEverything.Services
+@using Microsoft.JSInterop
+@using Microsoft.SemanticKernel.ChatCompletion
+@inject IAIChatService ChatService
+@inject ILogger<Chat> Logger
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+@rendermode InteractiveServer
+
+<PageTitle>AI Assistant</PageTitle>
+
+<div class="chat-container">
+    <header class="chat-header">
+        <div class="header-content">
+            <h1>AI Assistant</h1>
+            <p class="subtitle">Your intelligent companion</p>
+        </div>
+    </header>
+    
+    <div class="chat-history" @ref="chatHistoryDiv">
+        @foreach (var message in ChatService.GetChatHistory())
+        {
+            <div class="message @(message.Role.ToString().ToLower())">
+                @if (message.Role == AuthorRole.Assistant)
+                {
+                    <div class="avatar">AI</div>
+                }
+                <div class="message-content">
+                    <p>@((MarkupString)message.Content.Replace("\n", "<br>"))</p>
+                </div>
+                @if (message.Role == AuthorRole.User)
+                {
+                    <div class="avatar">User</div>
+                }
+            </div>
+        }
+        @if (isStreaming)
+        {
+            <div class="message assistant">
+                <div class="avatar">AI</div>
+                <div class="message-content">
+                    <p>@((MarkupString)currentStreamingMessage.Replace("\n", "<br>"))</p>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="chat-input-container">
+        <div class="input-wrapper">
+            <input type="text" 
+                   placeholder="Message AI Assistant..." 
+                   @bind="userInput" 
+                   @onkeyup="HandleKeyPress" />
+            <button type="button" class="send-button" @onclick="SendMessage">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string userInput = "";
+    private string currentStreamingMessage = "";
+    private bool isStreaming = false;
+    private ElementReference chatHistoryDiv;
+    private CancellationTokenSource? cts;
+    private bool isJsInteropReady;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            isJsInteropReady = true;
+            await ScrollToBottom();
+        }
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(userInput))
+        {
+            await SendMessage();
+        }
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(userInput))
+        {
+            Logger.LogWarning("SendMessage called with empty input");
+            return;
+        }
+
+        if (isStreaming)
+        {
+            Logger.LogWarning("SendMessage called while streaming");
+            return;
+        }
+
+        var userMessage = userInput;
+        
+        userInput = "";
+        
+        StateHasChanged();
+        if (isJsInteropReady)
+        {
+            await ScrollToBottom();
+        }
+
+        // Start streaming AI response
+        isStreaming = true;
+        currentStreamingMessage = "";
+        
+        try
+        {
+            cts = new CancellationTokenSource();
+            
+            await foreach (var chunk in ChatService.GetStreamingChatResponseAsync(userMessage).WithCancellation(cts.Token))
+            {
+                currentStreamingMessage += chunk;
+                StateHasChanged();
+                if (isJsInteropReady)
+                {
+                    await ScrollToBottom();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error during AI response streaming");
+        }
+        finally
+        {
+            isStreaming = false;
+            currentStreamingMessage = "";
+            StateHasChanged();
+            if (isJsInteropReady)
+            {
+                await ScrollToBottom();
+            }
+        }
+    }
+
+    private async Task ScrollToBottom()
+    {
+        try
+        {
+            if (chatHistoryDiv.Context != null)
+            {
+                await JS.InvokeVoidAsync("scrollToBottom", chatHistoryDiv);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error scrolling to bottom");
+        }
+    }
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        if (cts != null)
+        {
+            cts.Cancel();
+            cts.Dispose();
+        }
+    }
+} 

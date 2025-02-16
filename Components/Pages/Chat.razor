@@ -1,0 +1,185 @@
+@page "/chat"
+@using System.Collections.Generic
+@using Microsoft.JSInterop
+@using Microsoft.SemanticKernel.ChatCompletion
+@using AIUsingBlazorApp.Services
+@inject IJSRuntime JS
+@inject AIService AIService
+
+<div class="chat-container">
+    <div class="chat-sidebar">
+        <div class="new-chat-button">
+            <button @onclick="StartNewChat">
+                <i class="fas fa-plus"></i>
+                New Chat
+            </button>
+        </div>
+        <div class="chat-history">
+            @foreach (var chat in savedChats)
+            {
+                <div class="history-item">
+                    <i class="fas fa-message"></i>
+                    <span>@chat.Title</span>
+                </div>
+            }
+        </div>
+    </div>
+    
+    <div class="chat-main">
+        <div class="chat-messages" @ref="messagesRef">
+            @foreach (var message in displayMessages)
+            {
+                <div class="message @(message.IsUser ? "user-message" : "ai-message")">
+                    <div class="message-avatar">
+                        @if (message.IsUser)
+                        {
+                            <i class="fas fa-user"></i>
+                        }
+                        else
+                        {
+                            <i class="fas fa-robot"></i>
+                        }
+                    </div>
+                    <div class="message-content">
+                        <div class="message-text">@message.Content</div>
+                    </div>
+                </div>
+            }
+            @if (isStreaming)
+            {
+                <div class="message ai-message">
+                    <div class="message-avatar">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="message-content">
+                        <div class="message-text">@currentStreamingContent</div>
+                    </div>
+                </div>
+            }
+        </div>
+        
+        <div class="chat-input">
+            <div class="input-container">
+                <textarea 
+                    @bind="userInput" 
+                    @bind:event="oninput"
+                    @onkeydown="HandleKeyPress"
+                    placeholder="Type a message..."
+                    rows="1"
+                    disabled="@isStreaming"
+                ></textarea>
+                <button class="send-button" @onclick="SendMessage" disabled="@isStreaming">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+            <div class="input-footer">
+                <span class="disclaimer">AI may produce inaccurate information.</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string userInput = "";
+    private List<DisplayMessage> displayMessages = new();
+    private List<SavedChat> savedChats = new();
+    private ElementReference messagesRef;
+    private ChatHistory chatHistory = new();
+    private bool isStreaming = false;
+    private string currentStreamingContent = "";
+    private CancellationTokenSource? streamCancellationTokenSource;
+
+    private class DisplayMessage
+    {
+        public string Content { get; set; } = "";
+        public bool IsUser { get; set; }
+    }
+
+    private class SavedChat
+    {
+        public string Title { get; set; } = "";
+        public ChatHistory History { get; set; } = new();
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(userInput) || isStreaming)
+            return;
+
+        var userMessage = new DisplayMessage { Content = userInput, IsUser = true };
+        displayMessages.Add(userMessage);
+        chatHistory.AddUserMessage(userInput);
+        userInput = "";
+
+        StateHasChanged();
+        await ScrollToBottom();
+
+        try
+        {
+            isStreaming = true;
+            currentStreamingContent = "";
+            streamCancellationTokenSource = new CancellationTokenSource();
+
+            await foreach (var content in AIService.GetStreamingChatCompletionAsync(
+                chatHistory, streamCancellationTokenSource.Token))
+            {
+                currentStreamingContent += content;
+                StateHasChanged();
+                await ScrollToBottom();
+            }
+
+            chatHistory.AddAssistantMessage(currentStreamingContent);
+            displayMessages.Add(new DisplayMessage { Content = currentStreamingContent, IsUser = false });
+            currentStreamingContent = "";
+        }
+        catch (Exception ex)
+        {
+            displayMessages.Add(new DisplayMessage { Content = $"Error: {ex.Message}", IsUser = false });
+        }
+        finally
+        {
+            isStreaming = false;
+            streamCancellationTokenSource?.Dispose();
+            streamCancellationTokenSource = null;
+            StateHasChanged();
+            await ScrollToBottom();
+        }
+    }
+
+    private async Task ScrollToBottom()
+    {
+        await Task.Delay(50);
+        await JS.InvokeVoidAsync("scrollToBottom", messagesRef);
+    }
+
+    private void StartNewChat()
+    {
+        if (isStreaming)
+        {
+            streamCancellationTokenSource?.Cancel();
+        }
+
+        if (displayMessages.Any())
+        {
+            savedChats.Add(new SavedChat
+            {
+                Title = $"Chat {savedChats.Count + 1}",
+                History = chatHistory
+            });
+        }
+
+        displayMessages.Clear();
+        chatHistory = new ChatHistory();
+        currentStreamingContent = "";
+        isStreaming = false;
+        StateHasChanged();
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
+        {
+            await SendMessage();
+        }
+    }
+} 
