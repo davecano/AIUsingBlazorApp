@@ -43,17 +43,20 @@ public class AIChatService : IAIChatService
     }
 
     public async IAsyncEnumerable<string> GetStreamingChatResponseAsync(
-        ChatHistory chatHistory)
+        ChatHistory chatHistory,
+        OpenAIPromptExecutionSettings? executionSettings = null)
     {
         var chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
 
+        executionSettings ??= new OpenAIPromptExecutionSettings 
+        { 
+            Temperature = 0.7f,
+            TopP = 0.95f
+        };
+
         var response = chatCompletionService.GetStreamingChatMessageContentsAsync(
             chatHistory,
-            executionSettings: new OpenAIPromptExecutionSettings 
-            { 
-                Temperature = 0.7f,
-                TopP = 0.95f
-            });
+            executionSettings: executionSettings);
 
         await foreach (var content in response)
         {

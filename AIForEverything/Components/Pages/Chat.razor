@@ -5,6 +5,7 @@
 @using Microsoft.SemanticKernel.ChatCompletion
 @using Markdig
 @using AIForEverything.Constants
+@using Microsoft.SemanticKernel.Connectors.OpenAI
 @inject IAIChatService ChatService
 @inject IChatHistoryService ChatHistoryService
 @inject ILogger<Chat> Logger
@@ -19,7 +20,7 @@
     <div class="chat-container">
         <header class="chat-header">
             <div class="header-content">
-                <h1>AI Assistant</h1>
+                <h1>AI 助手</h1>
                 <p class="subtitle">@ChatConstants.SystemPrompt</p>
             </div>
             <div class="user-profile">
@@ -27,7 +28,13 @@
                     <span class="user-avatar">@(username?[0].ToString().ToUpper())</span>
                     <span class="username">@username</span>
                 </div>
-                <button class="logout-button" @onclick="HandleLogout" title="Logout">
+                <button class="settings-button" @onclick="() => showSettings = !showSettings" title="AI 设置">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" fill="currentColor"/>
+                        <path fill-rule="evenodd" clip-rule="evenodd" d="M13.2 3.06V3.06C12.805 3.02 12.405 3 12 3C11.595 3 11.195 3.02 10.8 3.06L10.551 4.463C9.724 4.646 8.948 4.961 8.25 5.386L7.032 4.533C6.347 5.024 5.726 5.592 5.186 6.228L5.703 7.592C5.141 8.215 4.681 8.923 4.347 9.692L2.985 9.923C2.868 10.438 2.8 10.967 2.8 11.5C2.8 12.033 2.868 12.562 2.985 13.077L4.347 13.308C4.681 14.077 5.141 14.785 5.703 15.408L5.186 16.772C5.726 17.408 6.347 17.976 7.032 18.467L8.25 17.614C8.948 18.039 9.724 18.354 10.551 18.537L10.8 19.94C11.195 19.98 11.595 20 12 20C12.405 20 12.805 19.98 13.2 19.94L13.449 18.537C14.276 18.354 15.052 18.039 15.75 17.614L16.968 18.467C17.653 17.976 18.274 17.408 18.814 16.772L18.297 15.408C18.859 14.785 19.319 14.077 19.653 13.308L21.015 13.077C21.132 12.562 21.2 12.033 21.2 11.5C21.2 10.967 21.132 10.438 21.015 9.923L19.653 9.692C19.319 8.923 18.859 8.215 18.297 7.592L18.814 6.228C18.274 5.592 17.653 5.024 16.968 4.533L15.75 5.386C15.052 4.961 14.276 4.646 13.449 4.463L13.2 3.06Z" fill="currentColor"/>
+                    </svg>
+                </button>
+                <button class="logout-button" @onclick="HandleLogout" title="退出登录">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M17 7L15.59 8.41L18.17 11H8V13H18.17L15.59 15.58L17 17L22 12L17 7Z" fill="currentColor"/>
                         <path d="M4 5H12V3H4C2.9 3 2 3.9 2 5V19C2 20.1 2.9 21 4 21H12V19H4V5Z" fill="currentColor"/>
@@ -36,6 +43,65 @@
             </div>
         </header>
         
+        @if (showSettings)
+        {
+            <div class="settings-panel" @onclick:stopPropagation>
+                <div class="settings-content">
+                    <h3>AI 设置</h3>
+                    <div class="setting-item">
+                        <label for="temperature">Temperature (@temperature)</label>
+                        <input type="range" 
+                               id="temperature" 
+                               min="0" 
+                               max="2" 
+                               step="0.1" 
+                               @bind-value="temperature" />
+                        <span class="setting-description">控制输出的随机性：较高的值会使输出更加随机多样，较低的值会使输出更加集中和确定。</span>
+                    </div>
+                    <div class="setting-item">
+                        <label for="topP">Top P (@topP)</label>
+                        <input type="range" 
+                               id="topP" 
+                               min="0" 
+                               max="1" 
+                               step="0.05" 
+                               @bind-value="topP" />
+                        <span class="setting-description">控制词汇采样范围：例如 0.5 表示仅考虑概率加起来达到 50% 的词汇选项。</span>
+                    </div>
+                    <div class="setting-item">
+                        <label for="maxTokens">Max Tokens (@maxTokens)</label>
+                        <input type="range" 
+                               id="maxTokens" 
+                               min="100" 
+                               max="2048" 
+                               step="50" 
+                               @bind-value="maxTokens" />
+                        <span class="setting-description">生成回复的最大标记数量（100-2048）。</span>
+                    </div>
+                    <div class="setting-item">
+                        <label for="frequencyPenalty">Frequency Penalty (@frequencyPenalty)</label>
+                        <input type="range" 
+                               id="frequencyPenalty" 
+                               min="0" 
+                               max="2" 
+                               step="0.1" 
+                               @bind-value="frequencyPenalty" />
+                        <span class="setting-description">降低重复词句的出现频率：较高的值会减少特定词语重复出现的可能性。</span>
+                    </div>
+                    <div class="setting-item">
+                        <label for="presencePenalty">Presence Penalty (@presencePenalty)</label>
+                        <input type="range" 
+                               id="presencePenalty" 
+                               min="0" 
+                               max="2" 
+                               step="0.1" 
+                               @bind-value="presencePenalty" />
+                        <span class="setting-description">鼓励谈论新话题：较高的值会增加模型谈论新话题的倾向。</span>
+                    </div>
+                </div>
+            </div>
+        }
+
         <div class="chat-history" @ref="chatHistoryDiv">
             @if (chatHistory != null)
             {
@@ -51,7 +117,7 @@
                         </div>
                         @if (message.Role == AuthorRole.User)
                         {
-                            <div class="avatar">User</div>
+                            <div class="avatar">你</div>
                         }
                     </div>
                 }
@@ -70,7 +136,7 @@
         <div class="chat-input-container">
             <div class="input-wrapper">
                 <input type="text" 
-                       placeholder="Message AI Assistant..." 
+                       placeholder="请输入您的消息..." 
                        @bind="userInput" 
                        @onkeyup="HandleKeyPress" />
                 <button type="button" class="send-button" @onclick="SendMessage">
@@ -124,6 +190,13 @@
     private string toastMessage = "";
     private bool isError = false;
     private System.Threading.Timer? toastTimer;
+
+    private bool showSettings = false;
+    private float temperature = 0.7f;
+    private float topP = 0.95f;
+    private int maxTokens = 1000;
+    private float frequencyPenalty = 0.5f;
+    private float presencePenalty = 0.5f;
     
     private static readonly MarkdownPipeline pipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
@@ -195,19 +268,19 @@
     {
         if (string.IsNullOrWhiteSpace(userInput))
         {
-            ShowToast("Please enter a message", true);
+            ShowToast("请输入消息", true);
             return;
         }
 
         if (isStreaming)
         {
-            ShowToast("Please wait for the AI to finish responding", true);
+            ShowToast("请等待 AI 完成当前回复", true);
             return;
         }
 
         if (!userId.HasValue)
         {
-            ShowToast("You must be logged in to send messages", true);
+            ShowToast("请先登录后再发送消息", true);
             return;
         }
 
@@ -226,8 +299,18 @@
         try
         {
             cts = new CancellationTokenSource();
+
+            var settings = new OpenAIPromptExecutionSettings 
+            { 
+                Temperature = temperature,
+                TopP = topP,
+                MaxTokens = maxTokens,
+                FrequencyPenalty = frequencyPenalty,
+                PresencePenalty = presencePenalty
+            };
             
-            await foreach (var chunk in ChatService.GetStreamingChatResponseAsync(chatHistory).WithCancellation(cts.Token))
+            await foreach (var chunk in ChatService.GetStreamingChatResponseAsync(
+                chatHistory, settings).WithCancellation(cts.Token))
             {
                 currentStreamingMessage += chunk;
                 StateHasChanged();
@@ -240,7 +323,7 @@
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error during AI response streaming");
-            ShowToast("An error occurred while getting the AI response", true);
+            ShowToast("AI 响应过程中出现错误", true);
         }
         finally
         {

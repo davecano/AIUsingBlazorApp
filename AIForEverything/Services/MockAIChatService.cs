@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.SemanticKernel.ChatCompletion;
+using Microsoft.SemanticKernel.Connectors.OpenAI;
 using AIForEverything.Data;
 
 namespace AIForEverything.Services;
@@ -20,7 +21,8 @@ public class MockAIChatService : IAIChatService
     }
 
     public async IAsyncEnumerable<string> GetStreamingChatResponseAsync(
-        ChatHistory chatHistory)
+        ChatHistory chatHistory,
+        OpenAIPromptExecutionSettings? executionSettings = null)
     {
         var responses = await GetResponses();
         var response = responses[_random.Next(responses.Count)];
