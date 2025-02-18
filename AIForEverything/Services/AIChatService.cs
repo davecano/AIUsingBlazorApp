@@ -19,27 +19,12 @@ public class AIChatService : IAIChatService
 
     public AIChatService(
         ILogger<AIChatService> logger,
-        IOptions<OpenAISettings> settings)
+        IOptions<OpenAISettings> settings,
+        Kernel kernel)
     {
         _logger = logger;
         _settings = settings.Value;
-        _kernel = InitializeKernel();
-    }
-
-    private Kernel InitializeKernel()
-    {
-        var kernelBuilder = Kernel.CreateBuilder();
-        
-        kernelBuilder.AddOpenAIChatCompletion(
-            modelId: _settings.ModelId,
-            apiKey: _settings.ApiKey,
-            httpClient: new HttpClient
-            {
-                BaseAddress = new Uri(_settings.Endpoint)
-            }
-        );
-        
-        return kernelBuilder.Build();
+        _kernel = kernel;
     }
 
     public async IAsyncEnumerable<string> GetStreamingChatResponseAsync(

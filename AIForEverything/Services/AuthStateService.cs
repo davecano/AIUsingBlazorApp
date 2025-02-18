@@ -2,14 +2,6 @@ using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 
 namespace AIForEverything.Services;
 
-public interface IAuthStateService
-{
-    Task<bool> IsAuthenticatedAsync();
-    Task<int?> GetUserIdAsync();
-    Task SetAuthenticatedAsync(int userId);
-    Task ClearAuthenticationAsync();
-}
-
 public class AuthStateService : IAuthStateService
 {
     private readonly ProtectedLocalStorage _localStorage;

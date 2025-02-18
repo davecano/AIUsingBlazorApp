@@ -6,13 +6,6 @@ using AIForEverything.Constants;
 
 namespace AIForEverything.Services;
 
-public interface IChatHistoryService
-{
-    Task<ChatHistory> LoadChatHistoryAsync(int userId);
-    Task SaveChatHistoryAsync(int userId, ChatHistory chatHistory);
-    Task ClearChatHistoryAsync(int userId);
-}
-
 public class ChatHistoryService : IChatHistoryService
 {
     private readonly ApplicationDbContext _context;

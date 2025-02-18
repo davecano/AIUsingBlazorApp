@@ -5,6 +5,9 @@ using AIForEverything.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+using Microsoft.SemanticKernel;
+using Microsoft.Extensions.Options;
+using System.Net.Http.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,6 +40,23 @@ else
 {
     builder.Services.AddScoped<IAIChatService, AIChatService>();
 }
+
+builder.Services.AddSingleton(sp =>
+{
+    var settings = sp.GetRequiredService<IOptions<OpenAISettings>>().Value;
+    var kernelBuilder = Kernel.CreateBuilder();
+    
+    kernelBuilder.AddOpenAIChatCompletion(
+        modelId: settings.ModelId,
+        apiKey: settings.ApiKey,
+        httpClient: new HttpClient
+        {
+            BaseAddress = new Uri(settings.Endpoint)
+        }
+    );
+    
+    return kernelBuilder.Build();
+});
 
 // Configure logging
 builder.Services.AddLogging(logging =>
