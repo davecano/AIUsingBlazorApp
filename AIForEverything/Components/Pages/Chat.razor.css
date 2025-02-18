@@ -18,7 +18,8 @@
 }
 
 .header-content {
-    text-align: center;
+    text-align: left;
+    padding-left: 2rem;
 }
 
 .header-content h1 {

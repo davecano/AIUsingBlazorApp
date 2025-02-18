@@ -1,82 +1,79 @@
 # AI For Everything 🤖
 
-一个现代化的 AI 聊天应用，基于 Blazor 构建，提供流畅的对话体验。
+一个基于 Blazor 开发的现代化 AI 聊天应用。
 
-![AI Assistant Preview](docs/images/preview.png)
+## 功能特点
 
-## ✨ 特性
+### 用户界面
+- 现代化的响应式聊天界面
+- 支持 Markdown 格式的消息显示
+- 平滑的消息动画和滚动效果
+- 自定义滚动条样式
+- 优雅的错误提示 Toast 组件
 
-- 🚀 实时流式响应 - 像真实对话一样，一个字一个字地显示 AI 的回答
-- 💬 优雅的聊天界面 - 现代化的 UI 设计，支持响应式布局
-- 🎨 渐变色主题 - 精心设计的渐变色彩，让界面更加生动
-- 📱 移动端适配 - 完美支持各种设备尺寸
-- 🔄 聊天历史记录 - 自动保存对话历史
-- 🎭 支持模拟模式 - 便于开发和测试
+### AI 对话
+- 实时流式响应
+- 支持 Markdown 格式输出
+- 系统提示消息（隐藏显示）
+- 完整的对话历史记录
+- 自动滚动到最新消息
 
-## 🛠️ 技术栈
+### AI 参数设置
+- Temperature（温度）控制：调节输出的随机性
+- Top P（采样阈值）：控制词汇采样范围
+- Max Tokens（最大长度）：控制生成文本的最大长度
+- Frequency Penalty（频率惩罚）：降低重复内容
+- Presence Penalty（话题惩罚）：鼓励多样性
 
-- **.NET 8** - 最新的 .NET 平台
-- **Blazor** - 现代化的 Web UI 框架
-- **Semantic Kernel** - 强大的 AI 开发框架
-- **OpenAI API** - 领先的 AI 模型接口
+### 用户功能
+- 用户登录/注册系统
+- 个性化用户头像显示
+- 聊天历史记录保存
+- 一键退出登录
 
-## 🚀 快速开始
+### 技术特性
+- 基于 .NET 8 和 Blazor
+- 实时流式响应
+- 响应式设计
+- 优雅的错误处理
+- 状态管理
+- 本地存储支持
 
-1. 克隆仓库：
+## 开发中的功能
+- [ ] 多语言支持
+- [ ] 深色模式
+- [ ] 导出聊天记录
+- [ ] 更多 AI 模型支持
+
+## 技术栈
+- .NET 8
+- Blazor
+- Entity Framework Core
+- Microsoft.SemanticKernel
+- SQLite
+- Markdig
+
+## 开始使用
+
+1. 克隆仓库
 ```bash
 git clone [repository-url]
 ```
 
-2. 配置 OpenAI 设置：
-   - 打开 `appsettings.json`
-   - 设置你的 API Key 和其他参数
-   - 或使用模拟模式进行测试
+2. 配置环境
+- 确保安装了 .NET 8 SDK
+- 配置数据库连接字符串
+- 设置 OpenAI API Key
 
-3. 运行项目：
+3. 运行应用
 ```bash
 dotnet run
 ```
 
-## 🎯 项目架构
+## 贡献指南
+欢迎提交 Pull Request 和 Issue。
 
-项目采用模板方法设计模式，通过抽象基类 `BaseChatService` 实现核心功能：
-
-- 📝 `IAIChatService` - 定义聊天服务接口
-- 🏗️ `BaseChatService` - 实现模板方法模式的抽象基类
-- 🤖 `AIChatService` - 实际的 AI 聊天实现
-- 🎭 `MockAIChatService` - 用于开发测试的模拟实现
-
-## 🎨 界面预览
-
-应用提供了精美的用户界面：
-
-- 渐变色标题栏
-- 流畅的消息动画
-- 响应式布局设计
-- 优雅的滚动条样式
-- 现代化的输入框设计
-
-## 🔧 配置选项
-
-在 `appsettings.json` 中可以配置：
-
-```json
-{
-  "UseMockService": true,  // 是否使用模拟服务
-  "OpenAISettings": {
-    "ModelId": "your-model",
-    "ApiKey": "your-api-key",
-    "Endpoint": "your-endpoint"
-  }
-}
-```
-
-## 🤝 贡献
-
-欢迎提交 Issue 和 Pull Request！
-
-## 📄 许可证
-
+## 许可证
 [MIT License](LICENSE)
 
 ---
