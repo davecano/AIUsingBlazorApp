@@ -19,6 +19,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Add Authentication Services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAuthStateService, AuthStateService>();
+builder.Services.AddScoped<IChatHistoryService, ChatHistoryService>();
 
 // Configure OpenAI Settings
 builder.Services.Configure<OpenAISettings>(

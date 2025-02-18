@@ -6,19 +6,22 @@ using System.Runtime.CompilerServices;
 using System.Linq;
 using AIForEverything.Data;
 using AIForEverything.Models;
+using AIForEverything.Constants;
+using ChatHistory = Microsoft.SemanticKernel.ChatCompletion.ChatHistory;
 
 namespace AIForEverything.Services;
 
-public class AIChatService : BaseChatService
+public class AIChatService : IAIChatService
 {
     private readonly Kernel _kernel;
     private readonly OpenAISettings _settings;
+    private readonly ILogger<AIChatService> _logger;
 
     public AIChatService(
-        ILogger<AIChatService> logger, 
-        IOptions<OpenAISettings> settings,
-        ApplicationDbContext context) : base(logger, context)
+        ILogger<AIChatService> logger,
+        IOptions<OpenAISettings> settings)
     {
+        _logger = logger;
         _settings = settings.Value;
         _kernel = InitializeKernel();
     }
@@ -29,7 +32,7 @@ public class AIChatService : BaseChatService
         
         kernelBuilder.AddOpenAIChatCompletion(
             modelId: _settings.ModelId,
-            apiKey: _settings.ApiKey, 
+            apiKey: _settings.ApiKey,
             httpClient: new HttpClient
             {
                 BaseAddress = new Uri(_settings.Endpoint)
@@ -39,11 +42,11 @@ public class AIChatService : BaseChatService
         return kernelBuilder.Build();
     }
 
-    protected override async IAsyncEnumerable<string> GenerateResponseStreamAsync(
-        string userMessage, 
-        Microsoft.SemanticKernel.ChatCompletion.ChatHistory chatHistory)
+    public async IAsyncEnumerable<string> GetStreamingChatResponseAsync(
+        ChatHistory chatHistory)
     {
         var chatCompletionService = _kernel.GetRequiredService<IChatCompletionService>();
+
         var response = chatCompletionService.GetStreamingChatMessageContentsAsync(
             chatHistory,
             executionSettings: new OpenAIPromptExecutionSettings 

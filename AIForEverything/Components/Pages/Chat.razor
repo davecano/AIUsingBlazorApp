@@ -1,13 +1,16 @@
 @page "/chat"
+@using AIForEverything.Components.Layout
 @using AIForEverything.Services
 @using Microsoft.JSInterop
 @using Microsoft.SemanticKernel.ChatCompletion
 @using Markdig
 @using AIForEverything.Constants
 @inject IAIChatService ChatService
+@inject IChatHistoryService ChatHistoryService
 @inject ILogger<Chat> Logger
 @inject IJSRuntime JS
 @inject IAuthStateService AuthStateService
+@inject IAuthService AuthService
 @inject NavigationManager NavigationManager
 @implements IAsyncDisposable
 @rendermode InteractiveServer
@@ -18,6 +21,18 @@
             <div class="header-content">
                 <h1>AI Assistant</h1>
                 <p class="subtitle">@ChatConstants.SystemPrompt</p>
+            </div>
+            <div class="user-profile">
+                <div class="user-info">
+                    <span class="user-avatar">@(username?[0].ToString().ToUpper())</span>
+                    <span class="username">@username</span>
+                </div>
+                <button class="logout-button" @onclick="HandleLogout" title="Logout">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M17 7L15.59 8.41L18.17 11H8V13H18.17L15.59 15.58L17 17L22 12L17 7Z" fill="currentColor"/>
+                        <path d="M4 5H12V3H4C2.9 3 2 3.9 2 5V19C2 20.1 2.9 21 4 21H12V19H4V5Z" fill="currentColor"/>
+                    </svg>
+                </button>
             </div>
         </header>
         
@@ -102,7 +117,8 @@
     private ElementReference chatHistoryDiv;
     private CancellationTokenSource? cts;
     private int? userId;
-    private ChatHistory? chatHistory;
+    private string? username;
+    private ChatHistory chatHistory = new();
     
     private bool showToast = false;
     private string toastMessage = "";
@@ -126,7 +142,13 @@
                     return;
                 }
 
-                chatHistory = await ChatService.GetChatHistoryAsync(userId.Value);
+                var user = await AuthService.GetUserByIdAsync(userId.Value);
+                if (user != null)
+                {
+                    username = user.Username;
+                }
+
+                chatHistory = await ChatHistoryService.LoadChatHistoryAsync(userId.Value);
                 StateHasChanged();
                 await ScrollToBottom();
             }
@@ -191,7 +213,9 @@
 
         var userMessage = userInput;
         userInput = "";
-        
+
+        // Add user message immediately to chat history
+        chatHistory.AddUserMessage(userMessage);
         StateHasChanged();
         await ScrollToBottom();
 
@@ -203,15 +227,15 @@
         {
             cts = new CancellationTokenSource();
             
-            await foreach (var chunk in ChatService.GetStreamingChatResponseAsync(userMessage, userId.Value).WithCancellation(cts.Token))
+            await foreach (var chunk in ChatService.GetStreamingChatResponseAsync(chatHistory).WithCancellation(cts.Token))
             {
                 currentStreamingMessage += chunk;
                 StateHasChanged();
                 await ScrollToBottom();
             }
 
-            // 更新聊天历史
-            chatHistory = await ChatService.GetChatHistoryAsync(userId.Value);
+            // Add AI response to chat history
+            chatHistory.AddAssistantMessage(currentStreamingMessage);
         }
         catch (Exception ex)
         {
@@ -242,6 +266,12 @@
         }
     }
 
+    private async Task HandleLogout()
+    {
+        await AuthStateService.ClearAuthenticationAsync();
+        NavigationManager.NavigateTo("/login", true);
+    }
+
     async ValueTask IAsyncDisposable.DisposeAsync()
     {
         if (cts != null)
@@ -249,6 +279,20 @@
             cts.Cancel();
             cts.Dispose();
         }
+
         toastTimer?.Dispose();
+
+        // Save chat history when component is disposed
+        if (userId.HasValue)
+        {
+            try
+            {
+                await ChatHistoryService.SaveChatHistoryAsync(userId.Value, chatHistory);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Error saving chat history during component disposal");
+            }
+        }
     }
 } 

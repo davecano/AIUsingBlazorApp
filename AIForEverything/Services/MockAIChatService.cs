@@ -4,23 +4,22 @@ using AIForEverything.Data;
 
 namespace AIForEverything.Services;
 
-public class MockAIChatService : BaseChatService
+public class MockAIChatService : IAIChatService
 {
     private readonly IWebHostEnvironment _environment;
+    private readonly ILogger<MockAIChatService> _logger;
     private static MockResponsesData? _responses;
     private static readonly Random _random = new();
 
     public MockAIChatService(
         IWebHostEnvironment environment, 
-        ILogger<MockAIChatService> logger,
-        ApplicationDbContext context) 
-        : base(logger, context)
+        ILogger<MockAIChatService> logger)
     {
         _environment = environment;
+        _logger = logger;
     }
 
-    protected override async IAsyncEnumerable<string> GenerateResponseStreamAsync(
-        string userMessage,
+    public async IAsyncEnumerable<string> GetStreamingChatResponseAsync(
         ChatHistory chatHistory)
     {
         var responses = await GetResponses();
