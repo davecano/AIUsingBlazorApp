@@ -15,6 +15,12 @@ public class ChatHistory
     public User User { get; set; } = null!;
 
     [Required]
+    public string Title { get; set; } = "New Chat";
+
+    [Required]
+    public Guid ConversationId { get; set; } = Guid.NewGuid();
+
+    [Required]
     public string Role { get; set; } = string.Empty;
 
     [Required]
